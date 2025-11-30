@@ -1,19 +1,31 @@
 /**
  * WhatsApp Server menggunakan @open-wa/wa-automate
  * 
- * Cara menjalankan:
- * 1. npm install @open-wa/wa-automate express cors
- * 2. node server/wa-server.js
- * 3. Scan QR Code yang muncul di terminal
- * 4. Server siap di http://localhost:3001
+ * Cara menjalankan lokal:
+ * 1. cd server
+ * 2. npm install
+ * 3. npm start
+ * 4. Scan QR Code yang muncul
+ * 
+ * Deploy ke Railway:
+ * 1. Push folder server ke GitHub
+ * 2. Connect ke Railway
+ * 3. Deploy otomatis
  */
 
-const { create, Client } = require('@open-wa/wa-automate');
+const { create } = require('@open-wa/wa-automate');
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+
+// CORS - Allow all origins for API access
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 let waClient = null;
@@ -25,7 +37,10 @@ async function startWhatsApp() {
   try {
     console.log('🚀 Starting WhatsApp client...');
     
-    waClient = await create({
+    // Detect if running on Railway/production
+    const isProduction = process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production';
+    
+    const config = {
       sessionId: 'koperasi-wa',
       multiDevice: true,
       authTimeout: 60,
@@ -35,18 +50,35 @@ async function startWhatsApp() {
       hostNotificationLang: 'id',
       logConsole: false,
       popup: false,
-      qrTimeout: 0, // Never timeout waiting for scan
+      qrTimeout: 0,
       
       // QR Code handler
       qrCallback: (qr) => {
         qrCode = qr;
         console.log('📱 QR Code ready! Scan dengan WhatsApp Anda.');
-        console.log('   Buka http://localhost:3001/qr untuk lihat QR di browser');
+        console.log(`   Buka /qr endpoint untuk lihat QR di browser`);
       },
       
       // Session saved
       sessionDataPath: './wa-session',
-    });
+    };
+
+    // Add Chromium path for Railway/production
+    if (isProduction) {
+      config.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
+      config.args = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ];
+    }
+    
+    waClient = await create(config);
 
     // Event handlers
     waClient.onStateChanged((state) => {
@@ -275,17 +307,19 @@ app.post('/check-number', async (req, res) => {
 
 // ============ START SERVER ============
 
-const PORT = 3001;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║          WhatsApp Server for Koperasi             ║
 ╠═══════════════════════════════════════════════════╣
-║  Server running at: http://localhost:${PORT}          ║
-║  QR Code page:      http://localhost:${PORT}/qr       ║
-║  Status:            http://localhost:${PORT}/status   ║
+║  Server running on port: ${PORT}                      ║
+║  Environment: ${process.env.NODE_ENV || 'development'}                     ║
 ╠═══════════════════════════════════════════════════╣
-║  API Endpoints:                                   ║
+║  Endpoints:                                       ║
+║  GET  /status       - Check connection status     ║
+║  GET  /qr           - Get QR code page            ║
 ║  POST /send         - Send single message         ║
 ║  POST /send-bulk    - Send bulk messages          ║
 ║  POST /check-number - Check if number on WA       ║

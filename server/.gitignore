@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# WhatsApp Session (jangan commit!)
+wa-session/
+*.data.json
+session.data.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+

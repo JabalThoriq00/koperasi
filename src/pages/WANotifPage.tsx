@@ -18,7 +18,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-const WA_SERVER_URL = 'http://localhost:3001';
+// Gunakan environment variable untuk production
+// Set VITE_WA_SERVER_URL di Vercel/hosting
+const WA_SERVER_URL = import.meta.env.VITE_WA_SERVER_URL || 'http://localhost:3001';
 
 export function WANotifPage() {
   // Subscribe to Zustand state
