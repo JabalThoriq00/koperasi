@@ -106,12 +106,10 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
         position: 'relative',
         zIndex: 1
       }}>
-        {/* Left side - Branding (hidden on mobile) */}
+        {/* Left side - Branding (hidden on mobile, shown via CSS class) */}
         <div style={{ 
           color: 'white', 
-          padding: '20px',
-          display: 'none',
-          '@media (min-width: 768px)': { display: 'block' }
+          padding: '20px'
         }} className="branding-section">
           <div style={{
             display: 'flex',

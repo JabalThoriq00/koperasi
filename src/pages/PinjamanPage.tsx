@@ -80,6 +80,7 @@ export function PinjamanPage() {
   
   // Get user's loans (reactive)
   const userLoans = loans.filter(l => l.userId === currentUser.id);
+  const activeLoan = userLoans.find(l => l.status === 'approved' && l.remainingAmount > 0);
   const allLoans = userLoans;
   
   const maxAmount = balance * 3;
