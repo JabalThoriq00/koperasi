@@ -383,70 +383,101 @@ export function LoginPage({ onNavigate }: LoginPageProps) {
           <div style={{
             background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
             borderRadius: '16px',
-            padding: '20px',
-            marginTop: '20px'
+            padding: '16px',
+            marginTop: '16px',
+            border: '1px solid #bbf7d0'
           }}>
             <p style={{
-              fontSize: '13px',
-              color: '#166534',
+              fontSize: '12px',
+              color: '#15803d',
               marginBottom: '12px',
               fontWeight: '600',
-              textAlign: 'center'
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
             }}>
-              🔑 Demo Account (klik untuk login otomatis)
+              <span style={{ fontSize: '14px' }}>🔐</span> Demo Account
             </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <button
                 type="button"
                 onClick={() => fillDemoAccount('nasabah')}
                 style={{
-                  flex: 1,
-                  padding: '12px',
+                  padding: '14px 10px',
                   background: 'white',
                   border: '2px solid #86efac',
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(34, 197, 94, 0.15)'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.borderColor = '#22c55e';
                   e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.25)';
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.borderColor = '#86efac';
                   e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(34, 197, 94, 0.15)';
                 }}
               >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>👤</div>
-                <div style={{ fontWeight: '600', color: '#166534', fontSize: '14px' }}>Nasabah</div>
-                <div style={{ fontSize: '11px', color: '#6b7280' }}>budi@example.com</div>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  margin: '0 auto 8px',
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Users style={{ width: '22px', height: '22px', color: 'white' }} />
+                </div>
+                <div style={{ fontWeight: '700', color: '#166534', fontSize: '14px', marginBottom: '2px' }}>Nasabah</div>
+                <div style={{ fontSize: '10px', color: '#6b7280' }}>budi@example.com</div>
               </button>
               <button
                 type="button"
                 onClick={() => fillDemoAccount('admin')}
                 style={{
-                  flex: 1,
-                  padding: '12px',
+                  padding: '14px 10px',
                   background: 'white',
                   border: '2px solid #86efac',
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(34, 197, 94, 0.15)'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.borderColor = '#22c55e';
                   e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.25)';
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.borderColor = '#86efac';
                   e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(34, 197, 94, 0.15)';
                 }}
               >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>👨‍💼</div>
-                <div style={{ fontWeight: '600', color: '#166534', fontSize: '14px' }}>Admin</div>
-                <div style={{ fontSize: '11px', color: '#6b7280' }}>admin@koperasi.com</div>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  margin: '0 auto 8px',
+                  background: 'linear-gradient(135deg, #0f5132, #198754)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Lock style={{ width: '20px', height: '20px', color: 'white' }} />
+                </div>
+                <div style={{ fontWeight: '700', color: '#166534', fontSize: '14px', marginBottom: '2px' }}>Admin</div>
+                <div style={{ fontSize: '10px', color: '#6b7280' }}>admin@koperasi.com</div>
               </button>
             </div>
           </div>

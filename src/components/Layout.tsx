@@ -15,6 +15,7 @@ import {
   CheckSquare,
   MessageCircle,
   Leaf,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -51,6 +52,7 @@ export function Layout({ children }: LayoutProps) {
     { icon: Home, label: 'Dashboard', path: 'admin-dashboard' },
     { icon: Users, label: 'Nasabah', path: 'admin-nasabah' },
     { icon: CheckSquare, label: 'Approval', path: 'admin-approval' },
+    { icon: FileSpreadsheet, label: 'Laporan & SHU', path: 'admin-laporan' },
     { icon: MessageCircle, label: 'Notifikasi WA', path: 'admin-wa' },
     { icon: History, label: 'Transaksi', path: 'admin-transaksi' },
     { icon: User, label: 'Profil', path: 'profil' },

@@ -95,6 +95,57 @@ export interface SavingsBalance {
   total: number;
 }
 
+export interface SHU {
+  userId: string;
+  userName: string;
+  year: number;
+  simpananPokok: number;
+  simpananWajib: number;
+  simpananSukarela: number;
+  totalSimpanan: number;
+  totalTransaksi: number; // Jumlah transaksi dalam setahun
+  kontribusiSimpanan: number; // % kontribusi simpanan terhadap total
+  kontribusiTransaksi: number; // % kontribusi transaksi terhadap total
+  shuSimpanan: number; // SHU dari kontribusi simpanan (40%)
+  shuTransaksi: number; // SHU dari kontribusi transaksi (30%)
+  shuDana: number; // SHU dari dana cadangan (20%)
+  shuPengurus: number; // SHU bagian pengurus (10%)
+  totalSHU: number;
+  status: 'calculated' | 'distributed' | 'pending';
+}
+
+export interface SHUConfig {
+  year: number;
+  totalLabaKotor: number; // Total laba kotor koperasi
+  biayaOperasional: number; // Biaya operasional
+  cadangan: number; // Dana cadangan (20%)
+  labaBeresih: number; // Laba bersih setelah dikurangi cadangan
+  persentaseSimpanan: number; // % SHU untuk simpanan (40%)
+  persentaseTransaksi: number; // % SHU untuk transaksi (30%)
+  persentaseDana: number; // % untuk dana sosial/cadangan (20%)
+  persentasePengurus: number; // % untuk pengurus (10%)
+}
+
+export interface NasabahReport {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  memberSince: string;
+  status: string;
+  simpananPokok: number;
+  simpananWajib: number;
+  simpananSukarela: number;
+  totalSimpanan: number;
+  totalPenarikan: number;
+  saldoSimpanan: number;
+  totalCicilan: number;
+  sisaCicilan: number;
+  jumlahTransaksi: number;
+  shuTahunIni: number;
+}
+
 interface AppState {
   // Theme
   darkMode: boolean;
@@ -165,6 +216,24 @@ interface AppState {
   approveLoan: (loanId: string) => void;
   rejectLoan: (loanId: string, reason?: string) => void;
   sendWhatsAppNotification: (transactionId: string) => void;
+
+  // SHU (Sisa Hasil Usaha)
+  shuConfig: SHUConfig;
+  shuRecords: SHU[];
+  setSHUConfig: (config: Partial<SHUConfig>) => void;
+  calculateSHU: (year: number) => SHU[];
+  getSHUByUser: (userId: string, year?: number) => SHU | undefined;
+  getAllSHU: (year?: number) => SHU[];
+  distributeSHU: (year: number) => void;
+
+  // Reports & Export
+  getNasabahReport: () => NasabahReport[];
+  getExportData: () => {
+    nasabah: NasabahReport[];
+    transactions: Transaction[];
+    loans: Loan[];
+    shu: SHU[];
+  };
 
   // Reset (for testing)
   resetToDefault: () => void;
@@ -445,6 +514,19 @@ const createDummyNotifications = (): Notification[] => [
 ];
 
 // Initial State
+// Default SHU Config for current year
+const createDefaultSHUConfig = (): SHUConfig => ({
+  year: new Date().getFullYear(),
+  totalLabaKotor: 50000000, // 50 juta laba kotor
+  biayaOperasional: 10000000, // 10 juta biaya operasional
+  cadangan: 8000000, // 20% dari laba bersih
+  labaBeresih: 32000000, // 40 juta - 8 juta cadangan
+  persentaseSimpanan: 40, // 40% untuk kontribusi simpanan
+  persentaseTransaksi: 30, // 30% untuk kontribusi transaksi
+  persentaseDana: 20, // 20% dana sosial
+  persentasePengurus: 10, // 10% pengurus
+});
+
 const getInitialState = () => ({
   darkMode: false,
   currentUser: null,
@@ -453,6 +535,8 @@ const getInitialState = () => ({
   transactions: createDummyTransactions(),
   loans: createDummyLoans(),
   notifications: createDummyNotifications(),
+  shuConfig: createDefaultSHUConfig(),
+  shuRecords: [] as SHU[],
 });
 
 export const useStore = create<AppState>()(
@@ -1026,6 +1110,169 @@ export const useStore = create<AppState>()(
       },
 
       // Reset
+      // SHU Functions
+      setSHUConfig: (config) => {
+        set(state => ({
+          shuConfig: { ...state.shuConfig, ...config }
+        }));
+      },
+
+      calculateSHU: (year) => {
+        const { users, transactions, shuConfig } = get();
+        const nasabahUsers = users.filter(u => u.role === 'nasabah');
+        
+        // Filter transactions for the year
+        const yearTransactions = transactions.filter(t => {
+          const txYear = new Date(t.date).getFullYear();
+          return txYear === year && t.status === 'approved';
+        });
+
+        // Calculate totals for all members
+        let totalSimpananAll = 0;
+        let totalTransaksiAll = 0;
+
+        const memberData = nasabahUsers.map(user => {
+          const userTx = yearTransactions.filter(t => t.userId === user.id);
+          const deposits = userTx.filter(t => t.type === 'simpanan');
+          
+          const pokok = deposits.filter(t => t.savingsType === 'pokok').reduce((sum, t) => sum + t.amount, 0);
+          const wajib = deposits.filter(t => t.savingsType === 'wajib').reduce((sum, t) => sum + t.amount, 0);
+          const sukarela = deposits.filter(t => t.savingsType === 'sukarela').reduce((sum, t) => sum + t.amount, 0);
+          const totalSimpanan = pokok + wajib + sukarela;
+          const totalTransaksi = userTx.length;
+
+          totalSimpananAll += totalSimpanan;
+          totalTransaksiAll += totalTransaksi;
+
+          return {
+            userId: user.id,
+            userName: user.name,
+            pokok,
+            wajib,
+            sukarela,
+            totalSimpanan,
+            totalTransaksi
+          };
+        });
+
+        // Calculate SHU for each member
+        const shuDistribusi = shuConfig.labaBeresih;
+        const shuSimpananPool = shuDistribusi * (shuConfig.persentaseSimpanan / 100);
+        const shuTransaksiPool = shuDistribusi * (shuConfig.persentaseTransaksi / 100);
+        const shuDanaPool = shuDistribusi * (shuConfig.persentaseDana / 100);
+        const shuPengurusPool = shuDistribusi * (shuConfig.persentasePengurus / 100);
+
+        const shuRecords: SHU[] = memberData.map(member => {
+          const kontribusiSimpanan = totalSimpananAll > 0 ? (member.totalSimpanan / totalSimpananAll) * 100 : 0;
+          const kontribusiTransaksi = totalTransaksiAll > 0 ? (member.totalTransaksi / totalTransaksiAll) * 100 : 0;
+
+          const shuSimpanan = Math.round(shuSimpananPool * (kontribusiSimpanan / 100));
+          const shuTransaksi = Math.round(shuTransaksiPool * (kontribusiTransaksi / 100));
+          const shuDana = Math.round(shuDanaPool / nasabahUsers.length); // Dibagi rata
+          const shuPengurus = 0; // Pengurus dapat bagian terpisah
+
+          return {
+            userId: member.userId,
+            userName: member.userName,
+            year,
+            simpananPokok: member.pokok,
+            simpananWajib: member.wajib,
+            simpananSukarela: member.sukarela,
+            totalSimpanan: member.totalSimpanan,
+            totalTransaksi: member.totalTransaksi,
+            kontribusiSimpanan: Math.round(kontribusiSimpanan * 100) / 100,
+            kontribusiTransaksi: Math.round(kontribusiTransaksi * 100) / 100,
+            shuSimpanan,
+            shuTransaksi,
+            shuDana,
+            shuPengurus,
+            totalSHU: shuSimpanan + shuTransaksi + shuDana,
+            status: 'calculated' as const
+          };
+        });
+
+        set({ shuRecords });
+        return shuRecords;
+      },
+
+      getSHUByUser: (userId, year) => {
+        const { shuRecords } = get();
+        const targetYear = year || new Date().getFullYear();
+        return shuRecords.find(s => s.userId === userId && s.year === targetYear);
+      },
+
+      getAllSHU: (year) => {
+        const { shuRecords } = get();
+        if (year) {
+          return shuRecords.filter(s => s.year === year);
+        }
+        return shuRecords;
+      },
+
+      distributeSHU: (year) => {
+        set(state => ({
+          shuRecords: state.shuRecords.map(s => 
+            s.year === year ? { ...s, status: 'distributed' as const } : s
+          )
+        }));
+      },
+
+      // Reports & Export
+      getNasabahReport: () => {
+        const { users, transactions, loans, shuRecords } = get();
+        const currentYear = new Date().getFullYear();
+        
+        return users
+          .filter(u => u.role === 'nasabah')
+          .map(user => {
+            const userTx = transactions.filter(t => t.userId === user.id && t.status === 'approved');
+            const deposits = userTx.filter(t => t.type === 'simpanan');
+            const withdrawals = userTx.filter(t => t.type === 'penarikan');
+            
+            const pokok = deposits.filter(t => t.savingsType === 'pokok').reduce((sum, t) => sum + t.amount, 0);
+            const wajib = deposits.filter(t => t.savingsType === 'wajib').reduce((sum, t) => sum + t.amount, 0);
+            const sukarela = deposits.filter(t => t.savingsType === 'sukarela').reduce((sum, t) => sum + t.amount, 0);
+            const totalSimpanan = pokok + wajib + sukarela;
+            const totalPenarikan = withdrawals.reduce((sum, t) => sum + t.amount, 0);
+            
+            const userLoans = loans.filter(l => l.userId === user.id);
+            const totalCicilan = userLoans.reduce((sum, l) => sum + l.amount, 0);
+            const sisaCicilan = userLoans.filter(l => l.status === 'approved').reduce((sum, l) => sum + l.remainingAmount, 0);
+            
+            const userSHU = shuRecords.find(s => s.userId === user.id && s.year === currentYear);
+
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+              address: user.address || '-',
+              memberSince: user.memberSince || '-',
+              status: user.accountStatus,
+              simpananPokok: pokok,
+              simpananWajib: wajib,
+              simpananSukarela: sukarela,
+              totalSimpanan,
+              totalPenarikan,
+              saldoSimpanan: totalSimpanan - totalPenarikan,
+              totalCicilan,
+              sisaCicilan,
+              jumlahTransaksi: userTx.length,
+              shuTahunIni: userSHU?.totalSHU || 0
+            };
+          });
+      },
+
+      getExportData: () => {
+        const { transactions, loans, shuRecords } = get();
+        return {
+          nasabah: get().getNasabahReport(),
+          transactions,
+          loans,
+          shu: shuRecords
+        };
+      },
+
       resetToDefault: () => set(getInitialState()),
     }),
     {
@@ -1039,6 +1286,8 @@ export const useStore = create<AppState>()(
         transactions: state.transactions,
         loans: state.loans,
         notifications: state.notifications,
+        shuConfig: state.shuConfig,
+        shuRecords: state.shuRecords,
       }),
     }
   )

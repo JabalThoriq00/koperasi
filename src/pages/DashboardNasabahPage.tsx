@@ -12,7 +12,9 @@ import {
   AlertTriangle,
   ShoppingBag,
   CheckCircle,
-  XCircle
+  XCircle,
+  Gift,
+  PieChart
 } from 'lucide-react';
 import {
   AreaChart,
@@ -34,6 +36,7 @@ export function DashboardNasabahPage({ onNavigate }: DashboardNasabahPageProps) 
   const transactions = useStore(state => state.transactions);
   const loans = useStore(state => state.loans);
   const notifications = useStore(state => state.notifications);
+  const shuRecords = useStore(state => state.shuRecords);
   
   // Use store functions
   const getUserBalance = useStore(state => state.getUserBalance);
@@ -42,6 +45,7 @@ export function DashboardNasabahPage({ onNavigate }: DashboardNasabahPageProps) 
   const getUserTransactions = useStore(state => state.getUserTransactions);
   const getMonthlyData = useStore(state => state.getMonthlyData);
   const getUnreadCount = useStore(state => state.getUnreadCount);
+  const getSHUByUser = useStore(state => state.getSHUByUser);
 
   if (!currentUser) return null;
 
@@ -66,6 +70,11 @@ export function DashboardNasabahPage({ onNavigate }: DashboardNasabahPageProps) 
   const nextInstallment = activeLoan?.installments.find(i => i.status !== 'paid');
   const isOverdue = nextInstallment && new Date(nextInstallment.dueDate) < new Date();
   const paidCount = activeLoan?.installments.filter(i => i.status === 'paid').length || 0;
+
+  // Get SHU for current year
+  const currentYear = new Date().getFullYear();
+  const userSHU = getSHUByUser(currentUser.id, currentYear);
+  const lastYearSHU = getSHUByUser(currentUser.id, currentYear - 1);
 
   return (
     <div style={{ paddingBottom: '80px' }}>
@@ -238,6 +247,92 @@ export function DashboardNasabahPage({ onNavigate }: DashboardNasabahPageProps) 
             <p style={{ fontSize: '11px', color: isOverdue ? '#dc2626' : '#d97706', margin: 0, fontWeight: '500' }}>
               {isOverdue ? '⚠️ Jatuh tempo!' : `Due: ${new Date(nextInstallment.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}`}
             </p>
+          )}
+        </div>
+      </div>
+
+      {/* SHU Card */}
+      <div style={{
+        background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+        borderRadius: '16px',
+        padding: '16px',
+        marginBottom: '16px',
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '-30px',
+          right: '-30px',
+          width: '100px',
+          height: '100px',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.1)'
+        }} />
+        
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Gift style={{ width: '20px', height: '20px' }} />
+              <span style={{ fontSize: '13px', opacity: 0.9 }}>Sisa Hasil Usaha (SHU)</span>
+            </div>
+            {userSHU && (
+              <span style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontSize: '10px',
+                fontWeight: '600',
+                background: userSHU.status === 'distributed' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)'
+              }}>
+                {userSHU.status === 'distributed' ? '✓ Dibagikan' : '⏳ Dihitung'}
+              </span>
+            )}
+          </div>
+
+          <p style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '800', margin: '0 0 12px 0' }}>
+            Rp {(userSHU?.totalSHU || 0).toLocaleString('id-ID')}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
+              <p style={{ fontSize: '10px', opacity: 0.8, margin: '0 0 2px 0' }}>Kontribusi</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0 }}>
+                {userSHU?.kontribusiSimpanan?.toFixed(1) || 0}%
+              </p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
+              <p style={{ fontSize: '10px', opacity: 0.8, margin: '0 0 2px 0' }}>Transaksi</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0 }}>
+                {userSHU?.totalTransaksi || 0}x
+              </p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
+              <p style={{ fontSize: '10px', opacity: 0.8, margin: '0 0 2px 0' }}>Tahun</p>
+              <p style={{ fontSize: '12px', fontWeight: '600', margin: 0 }}>{currentYear}</p>
+            </div>
+          </div>
+
+          {!userSHU && (
+            <p style={{ fontSize: '12px', opacity: 0.8, marginTop: '10px', marginBottom: 0 }}>
+              SHU akan dihitung di akhir tahun berdasarkan kontribusi Anda
+            </p>
+          )}
+
+          {lastYearSHU && (
+            <div style={{ 
+              marginTop: '10px', 
+              paddingTop: '10px', 
+              borderTop: '1px solid rgba(255,255,255,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <span style={{ fontSize: '11px', opacity: 0.8 }}>SHU {currentYear - 1}</span>
+              <span style={{ fontSize: '13px', fontWeight: '600' }}>
+                Rp {lastYearSHU.totalSHU.toLocaleString('id-ID')}
+              </span>
+            </div>
           )}
         </div>
       </div>

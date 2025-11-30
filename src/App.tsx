@@ -18,6 +18,7 @@ import { NasabahPage } from './pages/NasabahPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { WANotifPage } from './pages/WANotifPage';
 import { TransaksiPage } from './pages/TransaksiPage';
+import { LaporanPage } from './pages/LaporanPage';
 
 export default function App() {
   const { isAuthenticated, currentUser, darkMode } = useStore();
@@ -106,6 +107,8 @@ export default function App() {
         return isAdmin ? <ApprovalPage /> : <NotFoundPage onNavigate={navigate} />;
       case 'admin-wa':
         return isAdmin ? <WANotifPage /> : <NotFoundPage onNavigate={navigate} />;
+      case 'admin-laporan':
+        return isAdmin ? <LaporanPage /> : <NotFoundPage onNavigate={navigate} />;
       case 'admin-transaksi':
         return isAdmin ? <TransaksiPage /> : <NotFoundPage onNavigate={navigate} />;
 
