@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build output
+dist/
+build/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
+
+# WhatsApp Session (OpenWA)
+wa-session/
+session.data.json
+*.data.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Debug
+*.pem
+
+# Typescript
+*.tsbuildinfo
+
+# Vite
+vite.config.ts.timestamp-*
+
+# Local Netlify folder
+.netlify/
+
+# Vercel
+.vercel/
