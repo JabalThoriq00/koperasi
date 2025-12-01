@@ -8,10 +8,8 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  ChevronDown,
   ShoppingBag,
-  Calendar,
-  Download
+  Calendar
 } from 'lucide-react';
 
 export function TransaksiPage() {
@@ -23,6 +21,10 @@ export function TransaksiPage() {
   const [filterType, setFilterType] = useState<'all' | 'simpanan' | 'penarikan' | 'angsuran'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Date range filter
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Sort transactions by date
   const sortedTransactions = useMemo(() => {
@@ -38,9 +40,29 @@ export function TransaksiPage() {
                            t.transactionNumber?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = filterType === 'all' || t.type === filterType;
       const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
-      return matchesSearch && matchesType && matchesStatus;
+      
+      // Date range filter
+      let matchesDate = true;
+      if (startDate && endDate) {
+        const txDate = new Date(t.date);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        matchesDate = txDate >= start && txDate <= end;
+      } else if (startDate) {
+        const txDate = new Date(t.date);
+        const start = new Date(startDate);
+        matchesDate = txDate >= start;
+      } else if (endDate) {
+        const txDate = new Date(t.date);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        matchesDate = txDate <= end;
+      }
+      
+      return matchesSearch && matchesType && matchesStatus && matchesDate;
     });
-  }, [sortedTransactions, searchQuery, filterType, filterStatus]);
+  }, [sortedTransactions, searchQuery, filterType, filterStatus, startDate, endDate]);
 
   // Stats
   const totalAmount = transactions
@@ -147,7 +169,9 @@ export function TransaksiPage() {
         borderRadius: '16px',
         padding: '16px',
         marginBottom: '16px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.06)'
+        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+        position: 'relative',
+        zIndex: 10
       }}>
         <div style={{ display: 'flex', gap: '8px', marginBottom: showFilters ? '12px' : '0' }}>
           <div style={{ flex: 1, position: 'relative' }}>
@@ -183,43 +207,148 @@ export function TransaksiPage() {
         </div>
 
         {showFilters && (
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              style={{
-                flex: 1,
-                minWidth: '120px',
-                padding: '10px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '10px',
-                fontSize: '13px',
-                background: 'white'
-              }}
-            >
-              <option value="all">Semua Jenis</option>
-              <option value="simpanan">Setoran</option>
-              <option value="penarikan">Penarikan</option>
-              <option value="angsuran">Cicilan</option>
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-              style={{
-                flex: 1,
-                minWidth: '120px',
-                padding: '10px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '10px',
-                fontSize: '13px',
-                background: 'white'
-              }}
-            >
-              <option value="all">Semua Status</option>
-              <option value="approved">Disetujui</option>
-              <option value="pending">Pending</option>
-              <option value="rejected">Ditolak</option>
-            </select>
+          <div>
+            {/* Type Filter - Chips */}
+            <div style={{ marginBottom: '10px' }}>
+              <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 6px 0', fontWeight: '600' }}>Jenis Transaksi</p>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { value: 'all', label: 'Semua' },
+                  { value: 'simpanan', label: 'Setoran' },
+                  { value: 'penarikan', label: 'Penarikan' },
+                  { value: 'angsuran', label: 'Cicilan' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setFilterType(opt.value as any)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: 'none',
+                      background: filterType === opt.value ? '#198754' : '#f3f4f6',
+                      color: filterType === opt.value ? 'white' : '#6b7280',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Filter - Chips */}
+            <div style={{ marginBottom: '12px' }}>
+              <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 6px 0', fontWeight: '600' }}>Status</p>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { value: 'all', label: 'Semua' },
+                  { value: 'approved', label: 'Disetujui' },
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'rejected', label: 'Ditolak' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setFilterStatus(opt.value as any)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      border: 'none',
+                      background: filterStatus === opt.value ? '#198754' : '#f3f4f6',
+                      color: filterStatus === opt.value ? 'white' : '#6b7280',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Date Range Filter */}
+            <div style={{ 
+              padding: '12px',
+              background: '#f9fafb',
+              borderRadius: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar style={{ width: '14px', height: '14px', color: '#198754' }} />
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Filter Periode</span>
+                </div>
+                {(startDate || endDate) && (
+                  <button
+                    onClick={() => { setStartDate(''); setEndDate(''); }}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              
+              {/* Date inputs */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Dari</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      background: 'white'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Sampai</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      background: 'white'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {(startDate || endDate) && (
+                <div style={{
+                  marginTop: '10px',
+                  padding: '8px 10px',
+                  background: '#dcfce7',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  color: '#166534',
+                  fontWeight: '500',
+                  textAlign: 'center'
+                }}>
+                  ✓ {startDate ? new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '...'} — {endDate ? new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Sekarang'}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
